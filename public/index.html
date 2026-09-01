@@ -23,6 +23,11 @@
           <button type="submit">Scan</button>
         </div>
         <p class="hint">Examples: `C:\Users\dhruv\Downloads` or `D:\`</p>
+        <div class="quick-paths">
+          <button type="button" class="path-chip" data-path="C:\Users\dhruv\Desktop">Desktop</button>
+          <button type="button" class="path-chip" data-path="C:\Users\dhruv\Documents">Documents</button>
+          <button type="button" class="path-chip" data-path="C:\Users\dhruv\Downloads">Downloads</button>
+        </div>
       </form>
 
       <form id="search-form" class="panel">
@@ -45,6 +50,7 @@
           <p id="status-text">Enter a path and run a scan.</p>
         </div>
         <div class="hero-actions">
+          <button id="export-scan-button" type="button" disabled>Export Scan JSON</button>
           <button id="open-map-button" type="button" class="secondary" disabled>Open Fullscreen Map</button>
           <div class="hero-badge">100% local</div>
         </div>

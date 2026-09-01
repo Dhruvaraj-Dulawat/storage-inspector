@@ -160,6 +160,19 @@ input {
   align-items: center;
 }
 
+.quick-paths {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.path-chip {
+  padding: 8px 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .hero-badge {
   padding: 10px 14px;
   border-radius: 999px;
@@ -445,6 +458,7 @@ button.danger {
   justify-content: space-between;
   align-items: center;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .map-actions {
@@ -510,6 +524,11 @@ button.danger {
   gap: 12px;
 }
 
+.queue-controls {
+  display: flex;
+  gap: 8px;
+}
+
 .queue-items {
   margin-top: 12px;
   display: grid;
@@ -533,6 +552,19 @@ button.danger {
 .queue-item p {
   margin-top: 4px;
   font-size: 0.76rem;
+}
+
+.queue-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.queue-remove {
+  padding: 6px 10px;
+  color: #ffb1b1;
+  background: rgba(255, 109, 109, 0.12);
 }
 
 .context-menu {
@@ -592,6 +624,11 @@ button.danger {
   .hero-actions,
   .map-actions,
   .row {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .queue-controls {
     width: 100%;
     flex-direction: column;
   }

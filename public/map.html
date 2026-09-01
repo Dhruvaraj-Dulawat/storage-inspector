@@ -19,6 +19,11 @@
         <input id="path-input" name="path" type="text" placeholder="C:\Users\dhruv\Downloads">
         <button id="map-scan-button" type="button">Scan Here</button>
       </div>
+      <div class="quick-paths">
+        <button type="button" class="path-chip" data-path="C:\Users\dhruv\Desktop">Desktop</button>
+        <button type="button" class="path-chip" data-path="C:\Users\dhruv\Documents">Documents</button>
+        <button type="button" class="path-chip" data-path="C:\Users\dhruv\Downloads">Downloads</button>
+      </div>
     </section>
 
     <section class="map-stage panel">
@@ -46,7 +51,10 @@
               <p class="eyebrow">Cleanup Queue</p>
               <h4>0 items</h4>
             </div>
-            <button id="clear-queue" type="button" class="danger" disabled>Clear</button>
+            <div class="queue-controls">
+              <button id="delete-queued-files" type="button" disabled>Delete Files</button>
+              <button id="clear-queue" type="button" class="danger" disabled>Clear</button>
+            </div>
           </div>
           <div id="queue-items" class="queue-items">Nothing queued.</div>
         </aside>

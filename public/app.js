@@ -24,16 +24,17 @@ const breadcrumb = document.querySelector("#breadcrumb");
 const listTemplate = document.querySelector("#list-item-template");
 const openMapButton = document.querySelector("#open-map-button");
 const mapScanButton = document.querySelector("#map-scan-button");
-const inspector = document.querySelector("#inspector");
-const inspectOpen = document.querySelector("#inspect-open");
-const inspectQueue = document.querySelector("#inspect-queue");
-const cleanupQueue = document.querySelector("#cleanup-queue");
+const exportScanButton = document.querySelector("#export-scan-button");
+const cleanupQueuePanel = document.querySelector("#cleanup-queue");
 const queueItems = document.querySelector("#queue-items");
 const clearQueueButton = document.querySelector("#clear-queue");
+const deleteQueuedFilesButton = document.querySelector("#delete-queued-files");
+const inspector = document.querySelector("#inspector");
 const contextMenu = document.querySelector("#context-menu");
 const contextZoom = document.querySelector("#context-zoom");
 const contextQueue = document.querySelector("#context-queue");
 const contextDelete = document.querySelector("#context-delete");
+const quickPathButtons = document.querySelectorAll(".path-chip");
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes < 1) {
@@ -60,14 +61,6 @@ function setEmpty(container, message) {
 function clearContainer(container) {
   container.classList.remove("empty");
   container.textContent = "";
-}
-
-function hashColor(seed) {
-  let value = 0;
-  for (const char of seed) {
-    value = (value * 31 + char.charCodeAt(0)) % 360;
-  }
-  return `hsla(${value}, 68%, 44%, 0.88)`;
 }
 
 function layoutTreemap(items, x, y, width, height, vertical = width > height) {
@@ -117,10 +110,31 @@ function findNodeByPath(node, targetPath) {
   return null;
 }
 
+function persistQueue() {
+  localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(state.cleanupQueue));
+}
+
+function addToQueue(node) {
+  const exists = state.cleanupQueue.some((item) => item.path === node.path);
+  if (exists) {
+    return;
+  }
+
+  state.cleanupQueue.push({
+    name: node.name,
+    path: node.path,
+    size: node.size,
+    type: node.type
+  });
+  persistQueue();
+  renderCleanupQueue();
+}
+
 function renderMetrics() {
   if (!metrics) {
     return;
   }
+
   const inventory = state.scanData?.inventory;
   if (!inventory) {
     setEmpty(metrics, "No metrics yet.");
@@ -130,6 +144,7 @@ function renderMetrics() {
   clearContainer(metrics);
   const grid = document.createElement("div");
   grid.className = "metric-grid";
+
   [
     ["Total size", formatBytes(inventory.totalSize)],
     ["Files", inventory.fileCount.toLocaleString()],
@@ -141,6 +156,7 @@ function renderMetrics() {
     card.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
     grid.appendChild(card);
   });
+
   metrics.appendChild(grid);
 }
 
@@ -148,6 +164,7 @@ function renderSystemStats(payload) {
   if (!systemStats) {
     return;
   }
+
   clearContainer(systemStats);
   systemStats.innerHTML = `
     <p class="eyebrow">System</p>
@@ -164,6 +181,7 @@ function renderBreadcrumb(node) {
   if (!breadcrumb) {
     return;
   }
+
   clearContainer(breadcrumb);
   const parts = node.path.split(/\\+/).filter(Boolean);
   const crumbs = [];
@@ -183,9 +201,8 @@ function renderBreadcrumb(node) {
     button.className = "crumb";
     button.textContent = crumb.label;
     button.onclick = () => {
-      const nodeForPath = findNodeByPath(state.scanData.tree, crumb.path);
+      const nodeForPath = findNodeByPath(state.scanData?.tree, crumb.path);
       if (nodeForPath) {
-        state.currentNode = nodeForPath;
         renderTreemap(nodeForPath);
       }
     };
@@ -200,6 +217,15 @@ function updateInspector(node) {
 
   if (!node) {
     inspector.classList.add("empty");
+    inspector.innerHTML = `
+      <p class="eyebrow">Selection</p>
+      <h4>No item selected</h4>
+      <p class="path">Click a block to inspect it.</p>
+      <div class="floating-actions">
+        <button type="button" class="secondary" disabled>Zoom In</button>
+        <button type="button" disabled>Add To Queue</button>
+      </div>
+    `;
     return;
   }
 
@@ -208,56 +234,37 @@ function updateInspector(node) {
     <p class="eyebrow">Selection</p>
     <h4>${node.name}</h4>
     <p class="path">${node.path}</p>
-    <p class="tile-meta">${node.type} • ${formatBytes(node.size)}</p>
+    <p class="tile-meta">${node.type} | ${formatBytes(node.size)}</p>
     <div class="floating-actions">
       <button id="inspect-open" type="button" class="secondary" ${node.children?.length ? "" : "disabled"}>Zoom In</button>
       <button id="inspect-queue" type="button">Add To Queue</button>
     </div>
   `;
 
-  const openButton = inspector.querySelector("#inspect-open");
-  const queueButton = inspector.querySelector("#inspect-queue");
-
-  openButton?.addEventListener("click", () => {
+  inspector.querySelector("#inspect-open")?.addEventListener("click", () => {
     if (node.children?.length) {
       renderTreemap(node);
     }
   });
 
-  queueButton?.addEventListener("click", () => {
+  inspector.querySelector("#inspect-queue")?.addEventListener("click", () => {
     addToQueue(node);
   });
 }
 
-function addToQueue(node) {
-  const exists = state.cleanupQueue.some((item) => item.path === node.path);
-  if (exists) {
-    return;
-  }
-
-  state.cleanupQueue.push({
-    name: node.name,
-    path: node.path,
-    size: node.size,
-    type: node.type
-  });
-  persistQueue();
-  renderCleanupQueue();
-}
-
-function persistQueue() {
-  localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(state.cleanupQueue));
-}
-
 function renderCleanupQueue() {
-  if (!cleanupQueue || !queueItems || !clearQueueButton) {
+  if (!cleanupQueuePanel || !queueItems || !clearQueueButton) {
     return;
   }
 
   const count = state.cleanupQueue.length;
-  cleanupQueue.classList.toggle("empty", count === 0);
-  cleanupQueue.querySelector("h4").textContent = `${count} item${count === 1 ? "" : "s"}`;
+  cleanupQueuePanel.classList.toggle("empty", count === 0);
+  cleanupQueuePanel.querySelector("h4").textContent = `${count} item${count === 1 ? "" : "s"}`;
   clearQueueButton.disabled = count === 0;
+
+  if (deleteQueuedFilesButton) {
+    deleteQueuedFilesButton.disabled = !state.cleanupQueue.some((item) => item.type === "file");
+  }
 
   if (count === 0) {
     queueItems.textContent = "Nothing queued.";
@@ -268,8 +275,23 @@ function renderCleanupQueue() {
   state.cleanupQueue.forEach((item) => {
     const row = document.createElement("article");
     row.className = "queue-item";
-    row.innerHTML = `<strong>${item.name}</strong><p>${item.path}</p><p>${item.type} • ${formatBytes(item.size)}</p>`;
+    row.innerHTML = `
+      <div class="queue-item-head">
+        <strong>${item.name}</strong>
+        <button type="button" class="queue-remove" data-path="${item.path}">Remove</button>
+      </div>
+      <p>${item.path}</p>
+      <p>${item.type} | ${formatBytes(item.size)}</p>
+    `;
     queueItems.appendChild(row);
+  });
+
+  queueItems.querySelectorAll(".queue-remove").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.cleanupQueue = state.cleanupQueue.filter((item) => item.path !== button.dataset.path);
+      persistQueue();
+      renderCleanupQueue();
+    });
   });
 }
 
@@ -307,12 +329,50 @@ async function deleteNodeFile(node) {
   await runScan(state.currentPath);
 }
 
+async function deleteQueuedFiles() {
+  const files = state.cleanupQueue.filter((item) => item.type === "file");
+  if (!files.length) {
+    return;
+  }
+
+  const ok = window.confirm(`Delete ${files.length} queued files?`);
+  if (!ok) {
+    return;
+  }
+
+  for (const file of files) {
+    await fetch(`/api/file?path=${encodeURIComponent(file.path)}`, {
+      method: "DELETE"
+    }).catch(() => null);
+  }
+
+  state.cleanupQueue = state.cleanupQueue.filter((item) => item.type !== "file");
+  persistQueue();
+  renderCleanupQueue();
+  await runScan(state.currentPath);
+}
+
+function showContextMenu(clientX, clientY, node) {
+  if (!contextMenu) {
+    return;
+  }
+
+  contextMenu.classList.remove("hidden");
+  contextMenu.dataset.path = node.path;
+  contextMenu.style.left = `${clientX}px`;
+  contextMenu.style.top = `${clientY}px`;
+  contextZoom.disabled = !node.children?.length;
+  contextDelete.disabled = node.type !== "file";
+}
+
 function createTile(node, rect, depth) {
   const tile = document.createElement("button");
   tile.className = `tile tile-depth-${Math.min(depth, 5)} tile-${node.type}`;
+
   if (node.path === state.selectedNodePath) {
     tile.classList.add("selected");
   }
+
   tile.style.left = `${rect.x}px`;
   tile.style.top = `${rect.y}px`;
   tile.style.width = `${rect.width}px`;
@@ -321,6 +381,7 @@ function createTile(node, rect, depth) {
 
   const showHeader = rect.height > 22 && rect.width > 60;
   const showMeta = rect.height > 58 && rect.width > 90;
+
   tile.innerHTML = `
     ${showHeader ? `<div class="tile-header">${node.name}</div>` : ""}
     <div class="tile-body">
@@ -355,19 +416,6 @@ function createTile(node, rect, depth) {
   return tile;
 }
 
-function showContextMenu(clientX, clientY, node) {
-  if (!contextMenu) {
-    return;
-  }
-
-  contextMenu.classList.remove("hidden");
-  contextMenu.dataset.path = node.path;
-  contextMenu.style.left = `${clientX}px`;
-  contextMenu.style.top = `${clientY}px`;
-  contextZoom.disabled = !node.children?.length;
-  contextDelete.disabled = node.type !== "file";
-}
-
 function renderNestedTiles(container, node, x, y, width, height, depth = 0) {
   if (!node.children?.length) {
     return;
@@ -395,6 +443,10 @@ function renderNestedTiles(container, node, x, y, width, height, depth = 0) {
 }
 
 function renderTreemap(node) {
+  if (!treemap) {
+    return;
+  }
+
   if (!node || !node.children?.length) {
     setEmpty(treemap, "Nothing to visualize at this level.");
     return;
@@ -404,13 +456,23 @@ function renderTreemap(node) {
   clearContainer(treemap);
   hideContextMenu();
   renderBreadcrumb(node);
+
   treemap.addEventListener("click", () => {
     state.selectedNodePath = "";
     updateInspector(null);
     renderTreemap(state.currentNode);
   }, { once: true });
 
-  renderNestedTiles(treemap, node, 0, 0, treemap.clientWidth || 1280, treemap.clientHeight || 720, 0);
+  renderNestedTiles(
+    treemap,
+    node,
+    0,
+    0,
+    treemap.clientWidth || 1280,
+    treemap.clientHeight || 720,
+    0
+  );
+
   updateInspector(state.selectedNodePath ? findNodeByPath(state.scanData?.tree, state.selectedNodePath) : null);
 }
 
@@ -442,7 +504,7 @@ function createFileCard(file, allowDelete = true) {
       }
 
       window.alert("File deleted.");
-      runScan(state.currentPath);
+      await runScan(state.currentPath);
     };
   }
 
@@ -453,32 +515,39 @@ function renderLargestFiles(files) {
   if (!largestFiles) {
     return;
   }
+
   if (!files?.length) {
     setEmpty(largestFiles, "No files found.");
     return;
   }
 
   clearContainer(largestFiles);
-  files.slice(0, 20).forEach((file) => largestFiles.appendChild(createFileCard(file)));
+  files.slice(0, 20).forEach((file) => {
+    largestFiles.appendChild(createFileCard(file));
+  });
 }
 
 function renderSearchResults(files) {
   if (!searchResults) {
     return;
   }
+
   if (!files?.length) {
     setEmpty(searchResults, "No matching files.");
     return;
   }
 
   clearContainer(searchResults);
-  files.forEach((file) => searchResults.appendChild(createFileCard(file)));
+  files.forEach((file) => {
+    searchResults.appendChild(createFileCard(file));
+  });
 }
 
 function renderExtensions(items) {
   if (!extensions) {
     return;
   }
+
   if (!items?.length) {
     setEmpty(extensions, "No extension data.");
     return;
@@ -521,8 +590,12 @@ async function runScan(scanPath) {
   renderTreemap(payload.tree);
   renderLargestFiles(payload.inventory.largestFiles);
   renderExtensions(payload.inventory.extensionBreakdown);
+
   if (openMapButton) {
     openMapButton.disabled = false;
+  }
+  if (exportScanButton) {
+    exportScanButton.disabled = false;
   }
 }
 
@@ -552,9 +625,27 @@ async function loadSystemStats() {
   if (!systemStats) {
     return;
   }
+
   const response = await fetch("/api/stats");
   const payload = await response.json();
   renderSystemStats(payload);
+}
+
+function exportCurrentScan() {
+  if (!state.scanData) {
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(state.scanData, null, 2)], {
+    type: "application/json"
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  link.href = url;
+  link.download = `storage-scan-${timestamp}.json`;
+  link.click();
+  window.URL.revokeObjectURL(url);
 }
 
 function restoreLastScan() {
@@ -568,17 +659,24 @@ function restoreLastScan() {
     state.scanData = payload;
     state.currentNode = payload.tree;
     state.currentPath = payload.inventory?.rootPath || "";
+
     if (pathInput && state.currentPath) {
       pathInput.value = state.currentPath;
     }
+
     statusText.textContent = `Loaded previous scan for ${state.currentPath || "local storage"}.`;
     renderMetrics();
     renderTreemap(payload.tree);
     renderLargestFiles(payload.inventory?.largestFiles);
     renderExtensions(payload.inventory?.extensionBreakdown);
+
     if (openMapButton) {
       openMapButton.disabled = false;
     }
+    if (exportScanButton) {
+      exportScanButton.disabled = false;
+    }
+
     updateInspector(null);
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -640,11 +738,23 @@ if (mapScanButton) {
   });
 }
 
+if (exportScanButton) {
+  exportScanButton.addEventListener("click", () => {
+    exportCurrentScan();
+  });
+}
+
 if (clearQueueButton) {
   clearQueueButton.addEventListener("click", () => {
     state.cleanupQueue = [];
     persistQueue();
     renderCleanupQueue();
+  });
+}
+
+if (deleteQueuedFilesButton) {
+  deleteQueuedFilesButton.addEventListener("click", async () => {
+    await deleteQueuedFiles();
   });
 }
 
@@ -675,6 +785,14 @@ if (contextMenu) {
     await deleteNodeFile(node);
   });
 }
+
+quickPathButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (pathInput) {
+      pathInput.value = button.dataset.path;
+    }
+  });
+});
 
 window.addEventListener("resize", () => {
   if (state.currentNode) {
