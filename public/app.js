@@ -30,6 +30,10 @@ const inspectQueue = document.querySelector("#inspect-queue");
 const cleanupQueue = document.querySelector("#cleanup-queue");
 const queueItems = document.querySelector("#queue-items");
 const clearQueueButton = document.querySelector("#clear-queue");
+const contextMenu = document.querySelector("#context-menu");
+const contextZoom = document.querySelector("#context-zoom");
+const contextQueue = document.querySelector("#context-queue");
+const contextDelete = document.querySelector("#context-delete");
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes < 1) {
@@ -221,17 +225,24 @@ function updateInspector(node) {
   });
 
   queueButton?.addEventListener("click", () => {
-    const exists = state.cleanupQueue.some((item) => item.path === node.path);
-    if (!exists) {
-      state.cleanupQueue.push({
-        name: node.name,
-        path: node.path,
-        size: node.size
-      });
-      persistQueue();
-      renderCleanupQueue();
-    }
+    addToQueue(node);
   });
+}
+
+function addToQueue(node) {
+  const exists = state.cleanupQueue.some((item) => item.path === node.path);
+  if (exists) {
+    return;
+  }
+
+  state.cleanupQueue.push({
+    name: node.name,
+    path: node.path,
+    size: node.size,
+    type: node.type
+  });
+  persistQueue();
+  renderCleanupQueue();
 }
 
 function persistQueue() {
@@ -257,14 +268,48 @@ function renderCleanupQueue() {
   state.cleanupQueue.forEach((item) => {
     const row = document.createElement("article");
     row.className = "queue-item";
-    row.innerHTML = `<strong>${item.name}</strong><p>${item.path}</p><p>${formatBytes(item.size)}</p>`;
+    row.innerHTML = `<strong>${item.name}</strong><p>${item.path}</p><p>${item.type} • ${formatBytes(item.size)}</p>`;
     queueItems.appendChild(row);
   });
 }
 
+function hideContextMenu() {
+  if (!contextMenu) {
+    return;
+  }
+  contextMenu.classList.add("hidden");
+  contextMenu.dataset.path = "";
+}
+
+async function deleteNodeFile(node) {
+  if (!node || node.type !== "file") {
+    return;
+  }
+
+  const ok = window.confirm(`Delete file?\n${node.path}`);
+  if (!ok) {
+    return;
+  }
+
+  const response = await fetch(`/api/file?path=${encodeURIComponent(node.path)}`, {
+    method: "DELETE"
+  });
+  const payload = await response.json().catch(() => ({ error: "Delete failed." }));
+
+  if (!response.ok) {
+    window.alert(payload.error || "Delete failed.");
+    return;
+  }
+
+  state.cleanupQueue = state.cleanupQueue.filter((item) => item.path !== node.path);
+  persistQueue();
+  renderCleanupQueue();
+  await runScan(state.currentPath);
+}
+
 function createTile(node, rect, depth) {
   const tile = document.createElement("button");
-  tile.className = `tile tile-depth-${Math.min(depth, 5)}`;
+  tile.className = `tile tile-depth-${Math.min(depth, 5)} tile-${node.type}`;
   if (node.path === state.selectedNodePath) {
     tile.classList.add("selected");
   }
@@ -298,7 +343,29 @@ function createTile(node, rect, depth) {
     }
   });
 
+  tile.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    state.selectedNodePath = node.path;
+    updateInspector(node);
+    renderTreemap(state.currentNode);
+    showContextMenu(event.clientX, event.clientY, node);
+  });
+
   return tile;
+}
+
+function showContextMenu(clientX, clientY, node) {
+  if (!contextMenu) {
+    return;
+  }
+
+  contextMenu.classList.remove("hidden");
+  contextMenu.dataset.path = node.path;
+  contextMenu.style.left = `${clientX}px`;
+  contextMenu.style.top = `${clientY}px`;
+  contextZoom.disabled = !node.children?.length;
+  contextDelete.disabled = node.type !== "file";
 }
 
 function renderNestedTiles(container, node, x, y, width, height, depth = 0) {
@@ -335,6 +402,7 @@ function renderTreemap(node) {
 
   state.currentNode = node;
   clearContainer(treemap);
+  hideContextMenu();
   renderBreadcrumb(node);
   treemap.addEventListener("click", () => {
     state.selectedNodePath = "";
@@ -577,6 +645,34 @@ if (clearQueueButton) {
     state.cleanupQueue = [];
     persistQueue();
     renderCleanupQueue();
+  });
+}
+
+if (contextMenu) {
+  document.addEventListener("click", () => {
+    hideContextMenu();
+  });
+
+  contextZoom?.addEventListener("click", () => {
+    const node = findNodeByPath(state.scanData?.tree, contextMenu.dataset.path);
+    if (node?.children?.length) {
+      renderTreemap(node);
+    }
+    hideContextMenu();
+  });
+
+  contextQueue?.addEventListener("click", () => {
+    const node = findNodeByPath(state.scanData?.tree, contextMenu.dataset.path);
+    if (node) {
+      addToQueue(node);
+    }
+    hideContextMenu();
+  });
+
+  contextDelete?.addEventListener("click", async () => {
+    const node = findNodeByPath(state.scanData?.tree, contextMenu.dataset.path);
+    hideContextMenu();
+    await deleteNodeFile(node);
   });
 }
 

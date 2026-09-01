@@ -298,6 +298,14 @@ button.danger {
   text-overflow: ellipsis;
 }
 
+.tile-file .tile-header {
+  background: rgba(48, 72, 101, 0.52);
+}
+
+.tile-directory .tile-header {
+  background: rgba(60, 102, 79, 0.45);
+}
+
 .tile-body {
   padding: 6px;
   height: calc(100% - 19px);
@@ -525,6 +533,40 @@ button.danger {
 .queue-item p {
   margin-top: 4px;
   font-size: 0.76rem;
+}
+
+.context-menu {
+  position: absolute;
+  z-index: 12;
+  min-width: 220px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(17, 20, 26, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: 6px;
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.context-menu button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.context-menu button.secondary {
+  color: #041321;
+}
+
+.context-menu button.danger {
+  color: #ff9f9f;
 }
 
 @media (max-width: 1080px) {

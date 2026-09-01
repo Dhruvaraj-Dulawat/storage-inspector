@@ -7,5 +7,13 @@
   "scripts": {
     "start": "node server.js"
   },
+  "keywords": [
+    "disk-usage",
+    "treemap",
+    "cleanup",
+    "storage",
+    "visualizer"
+  ],
+  "author": "Dhruvaraj Dulawat",
   "license": "MIT"
 }
