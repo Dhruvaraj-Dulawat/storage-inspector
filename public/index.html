@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage Inspector</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="dashboard-page">
+  <div class="circuit-board" aria-hidden="true"></div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <p class="eyebrow">Local Disk Analyzer</p>
+        <h1>Storage Inspector</h1>
+        <p class="lede">Scan folders, visualize storage, search large files, and clean up locally.</p>
+      </div>
+
+      <form id="scan-form" class="panel">
+        <label for="path-input">Folder or drive path</label>
+        <div class="row">
+          <input id="path-input" name="path" type="text" placeholder="C:\Users\dhruv\Downloads" required>
+          <button type="submit">Scan</button>
+        </div>
+        <p class="hint">Examples: `C:\Users\dhruv\Downloads` or `D:\`</p>
+      </form>
+
+      <form id="search-form" class="panel">
+        <label for="search-input">Search scanned files</label>
+        <div class="row">
+          <input id="search-input" name="q" type="text" placeholder="mp4, zip, project...">
+          <button type="submit" class="secondary">Find</button>
+        </div>
+      </form>
+
+      <section class="panel metrics" id="metrics"></section>
+      <section class="panel system" id="system-stats"></section>
+    </aside>
+
+    <main class="content">
+      <section class="hero panel">
+        <div>
+          <p class="eyebrow">Treemap</p>
+          <h2>Visualize your space</h2>
+          <p id="status-text">Enter a path and run a scan.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="open-map-button" type="button" class="secondary" disabled>Open Fullscreen Map</button>
+          <div class="hero-badge">100% local</div>
+        </div>
+      </section>
+
+      <section class="panel treemap-panel">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Interactive Map</p>
+            <h3>Largest folders and files</h3>
+          </div>
+          <div id="breadcrumb" class="breadcrumb"></div>
+        </div>
+        <div id="treemap" class="treemap empty">No scan yet.</div>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Search</p>
+              <h3>Matching files</h3>
+            </div>
+          </div>
+          <div id="search-results" class="list empty">No search yet.</div>
+        </section>
+
+        <section class="panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Extensions</p>
+              <h3>What dominates space</h3>
+            </div>
+          </div>
+          <div id="extensions" class="list empty">No scan yet.</div>
+        </section>
+      </section>
+
+      <section class="panel">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Largest Files</p>
+            <h3>Cleanup candidates</h3>
+          </div>
+        </div>
+        <div id="largest-files" class="list empty">No scan yet.</div>
+      </section>
+    </main>
+  </div>
+
+  <template id="list-item-template">
+    <article class="item">
+      <div>
+        <h4></h4>
+        <p class="path"></p>
+      </div>
+      <div class="item-actions">
+        <strong></strong>
+        <button class="danger">Delete</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="/app.js"></script>
+</body>
+</html>

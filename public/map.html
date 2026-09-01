@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage Inspector Map</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="map-page">
+  <div class="circuit-board" aria-hidden="true"></div>
+  <main class="map-shell">
+    <section class="map-header panel">
+      <div>
+        <p class="eyebrow">Fullscreen Treemap</p>
+        <h1>Motherboard Storage Map</h1>
+        <p id="status-text">Open this page after a scan, or scan a path directly here.</p>
+      </div>
+      <div class="map-actions">
+        <input id="path-input" name="path" type="text" placeholder="C:\Users\dhruv\Downloads">
+        <button id="map-scan-button" type="button">Scan Here</button>
+      </div>
+    </section>
+
+    <section class="map-stage panel">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Board View</p>
+          <h3>Storage lanes and blocks</h3>
+        </div>
+        <div id="breadcrumb" class="breadcrumb"></div>
+      </div>
+      <div class="map-canvas">
+        <div id="treemap" class="treemap treemap-full empty">No scan yet.</div>
+        <aside id="inspector" class="floating-panel empty">
+          <p class="eyebrow">Selection</p>
+          <h4>No item selected</h4>
+          <p class="path">Click a block to inspect it.</p>
+          <div class="floating-actions">
+            <button id="inspect-open" type="button" class="secondary" disabled>Zoom In</button>
+            <button id="inspect-queue" type="button" disabled>Add To Queue</button>
+          </div>
+        </aside>
+        <aside id="cleanup-queue" class="floating-panel queue-panel empty">
+          <div class="queue-head">
+            <div>
+              <p class="eyebrow">Cleanup Queue</p>
+              <h4>0 items</h4>
+            </div>
+            <button id="clear-queue" type="button" class="danger" disabled>Clear</button>
+          </div>
+          <div id="queue-items" class="queue-items">Nothing queued.</div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
